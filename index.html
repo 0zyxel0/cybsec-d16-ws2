@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechNova SOC Analyst Simulator - Operation Bad Invoice</title>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Configuration for Cyberpunk/SOC dark theme -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              bg: '#0B0F19',
+              card: '#151D30',
+              border: '#1E2942',
+              primary: '#10B981', // Emerald green
+              accent: '#3B82F6', // Blue
+              warn: '#F59E0B',   // Amber
+              danger: '#EF4444', // Red
+              text: '#93C5FD'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .mono {
+      font-family: 'Fira Code', monospace;
+    }
+    /* Custom Scrollbars for console vibe */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0F19;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E2942;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3B82F6;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-card {
+        border: 2px solid #000 !important;
+        color: #000 !important;
+        background: white !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-cyber-bg text-slate-100 min-h-screen selection:bg-cyber-primary selection:text-black">
+
+  <div id="app" class="pb-16" v-cloak>
+    
+    <!-- TOP NAVIGATION BAR / STATUS BAR -->
+    <header class="border-b border-cyber-border bg-[#0E1524] sticky top-0 z-50 no-print">
+      <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <div class="bg-cyber-primary/10 border border-cyber-primary p-2 rounded-lg animate-pulse">
+            <svg class="w-6 h-6 text-cyber-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-cyber-primary bg-cyber-primary/10 px-2 py-0.5 rounded">Tier 1 SOC Simulator</span>
+              <span class="text-xs text-slate-400">v2.5</span>
+            </div>
+            <h1 class="text-lg font-extrabold tracking-tight text-white">Operation "Bad Invoice"</h1>
+          </div>
+        </div>
+
+        <!-- Progress Tracker -->
+        <div class="flex items-center gap-6">
+          <div class="text-right hidden sm:block">
+            <div class="text-xs text-slate-400">Ticket Validation Score</div>
+            <div class="text-lg font-bold mono" :class="scoreColor">
+              {{ score }}% <span class="text-xs text-slate-500">({{ correctAnswersCount }} / {{ totalAnswerFields }})</span>
+            </div>
+          </div>
+          <div class="w-24 bg-slate-800 rounded-full h-2 overflow-hidden hidden sm:block">
+            <div class="bg-cyber-primary h-2 transition-all duration-500" :style="{ width: score + '%' }"></div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="flex items-center gap-2">
+            <button @click="showInstructions = !showInstructions" class="bg-cyber-card hover:bg-slate-800 border border-cyber-border text-xs px-3 py-2 rounded-lg transition font-medium flex items-center gap-1">
+              <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>{{ showInstructions ? 'Hide Guide' : 'Mission Guide' }}</span>
+            </button>
+            <button @click="toggleHints" class="border text-xs px-3 py-2 rounded-lg transition font-medium flex items-center gap-1"
+              :class="hintsEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20' : 'bg-cyber-card border-cyber-border text-slate-300 hover:bg-slate-800'">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+              <span>Hints: {{ hintsEnabled ? 'ON' : 'OFF' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN BODY CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- INSTRUCTIONS EXPANDED DRAWER -->
+      <transition enter-active-class="transition duration-300 ease-out" enter-from-class="transform scale-95 opacity-0" enter-to-class="transform scale-100 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="transform scale-100 opacity-100" leave-to-class="transform scale-95 opacity-0">
+        <div v-if="showInstructions" class="lg:col-span-12 bg-blue-950/20 border border-blue-500/30 rounded-xl p-5 mb-2 no-print relative overflow-hidden">
+          <div class="absolute right-3 top-3">
+            <button @click="showInstructions = false" class="text-slate-400 hover:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+          </div>
+          <div class="flex items-start space-x-4">
+            <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400 mt-1">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white mb-1">Classroom Mission Guide</h3>
+              <p class="text-sm text-slate-300 mb-3">
+                Welcome to TechNova's SOC. A major incident has occurred in the Finance Department. Angela's PC has been infected, and network logs indicate a secondary payload was downloaded. As a Tier 1 Analyst, your tasks are:
+              </p>
+              <ul class="text-xs text-slate-300 space-y-1 list-disc pl-5">
+                <li><strong class="text-blue-300">Inspect the Evidence Tabs</strong> on the left: Read the Antivirus alert details, analyze the Wireshark packet capture sequence, and verify the vulnerability in the intelligence lookup.</li>
+                <li><strong class="text-blue-300">Populate the Incident Ticket</strong>: Fill in the correct values on the right. Green indicators mean correct details. Turn on <strong class="text-amber-400">Hints</strong> if you get stuck!</li>
+                <li><strong class="text-blue-300">Draft the Tier 2 Escalation Email</strong>: Help the Senior Incident Response Team contain the breach by correctly entering the dynamic placeholders in the email composer.</li>
+                <li><strong class="text-blue-300">Review & Submit</strong>: Earn your achievement badge and print your custom certificate when your score hits 100%!</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- LEFT SIDE: SCENARIO & EVIDENCE VIEWERS (7 Columns) -->
+      <section class="lg:col-span-7 space-y-6 no-print">
+
+        <!-- SCENARIO CARD -->
+        <div class="bg-cyber-card border border-cyber-border rounded-xl overflow-hidden shadow-xl">
+          <div class="bg-gradient-to-r from-red-950/40 to-slate-900 border-b border-cyber-border px-5 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="flex h-3 w-3 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyber-danger opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-cyber-danger"></span>
+              </span>
+              <h2 class="font-bold text-white tracking-wide uppercase text-xs sm:text-sm">Active Incident Briefing: Operation "Bad Invoice"</h2>
+            </div>
+            <span class="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded border border-red-500/20 font-semibold">08:34 AM ALARM</span>
+          </div>
+          <div class="p-5 text-sm leading-relaxed">
+            <p class="mb-4">
+              At <strong class="text-white">08:30 AM</strong>, Angela Smith from the <strong class="text-cyber-accent">Finance Department</strong> received an urgent email demanding attention for a "Q3 Overdue Invoice." Thinking it was legitimate, she opened the attached document <code class="bg-slate-950 px-1.5 py-0.5 rounded text-red-400 border border-cyber-border font-medium">Q3_Overdue_Invoice.docx</code>.
+            </p>
+            <div class="bg-[#090C15] border-l-4 border-cyber-warn p-3 rounded-r-lg mb-4 text-xs font-mono text-slate-300">
+              <span class="text-cyber-warn font-bold">[!] Angela's Witness Statement:</span><br>
+              "My computer completely froze for a few seconds right after I opened the document. For an instant, a black command window popped up and flashed on my screen, then closed on its own."
+            </div>
+            <p class="text-slate-300 text-xs sm:text-sm">
+              Within four minutes, the Defender AV and internal network routers detected anomalies. You must immediately dissect the digital forensics logs below.
+            </p>
+          </div>
+        </div>
+
+        <!-- EVIDENCE PORTAL (TABS) -->
+        <div class="bg-cyber-card border border-cyber-border rounded-xl overflow-hidden shadow-xl">
+          <!-- Evidence Selection Tabs -->
+          <div class="flex border-b border-cyber-border bg-[#0E1524]">
+            <button @click="activeEvidenceTab = 'av'" :class="activeEvidenceTab === 'av' ? 'border-b-2 border-cyber-primary text-cyber-primary bg-[#131A2A]' : 'text-slate-400 hover:text-white hover:bg-slate-900'" class="flex-1 py-3 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+              <span>Evidence A: Defender Log</span>
+            </button>
+            <button @click="activeEvidenceTab = 'wireshark'" :class="activeEvidenceTab === 'wireshark' ? 'border-b-2 border-cyber-accent text-cyber-accent bg-[#131A2A]' : 'text-slate-400 hover:text-white hover:bg-slate-900'" class="flex-1 py-3 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              <span>Evidence B: Network PCAP</span>
+            </button>
+            <button @click="activeEvidenceTab = 'cve'" :class="activeEvidenceTab === 'cve' ? 'border-b-2 border-cyber-warn text-cyber-warn bg-[#131A2A]' : 'text-slate-400 hover:text-white hover:bg-slate-900'" class="flex-1 py-3 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              <span>Evidence C: Threat Intel</span>
+            </button>
+          </div>
+
+          <!-- TAB CONTENT A: ANTIVIRUS CONSOLE -->
+          <div v-show="activeEvidenceTab === 'av'" class="p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+              <h3 class="font-bold text-white text-base">Defender Endpoint Alert Log</h3>
+              <span class="bg-red-500/10 text-red-400 text-xs px-2 py-0.5 rounded border border-red-500/20 font-bold tracking-wider">THREAT DETECTED</span>
+            </div>
+            
+            <div class="bg-slate-950 rounded-lg p-5 border border-cyber-border mono text-xs leading-relaxed text-slate-300 shadow-inner">
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-y-2 gap-x-4">
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[ALERT ID]</div>
+                <div class="sm:col-span-8 text-white">99384-AV</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[TIMESTAMP]</div>
+                <div class="sm:col-span-8 text-cyber-accent">08:34:12 AM</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[HOSTNAME]</div>
+                <div class="sm:col-span-8 text-yellow-400">FIN-PC-04</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[LOCAL IP]</div>
+                <div class="sm:col-span-8 text-cyan-400">192.168.10.45</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[THREAT NAME]</div>
+                <div class="sm:col-span-8 text-cyber-danger font-bold bg-red-950/20 px-1 rounded inline-block">Exploit:Win32/Follina.Aldha</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[AFFECTED FILE]</div>
+                <div class="sm:col-span-8 text-red-300">C:\Users\asmith\Downloads\Q3_Overdue_Invoice.docx</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[PROCESS HASH]</div>
+                <div class="sm:col-span-8 text-slate-400">8a9b4c3d2e1f...</div>
+
+                <div class="sm:col-span-4 text-slate-500 font-semibold">[ACTION TAKEN]</div>
+                <div class="sm:col-span-8 text-emerald-400 font-semibold">File Quarantined successfully.</div>
+              </div>
+              <div class="mt-4 pt-3 border-t border-slate-900 text-amber-400 font-medium flex items-start gap-2">
+                <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                <span>[WARNING]: Outbound network connection detected prior to quarantine event. Attack likely initiated external download sequence.</span>
+              </div>
+            </div>
+            <div class="text-xs text-slate-400 bg-slate-900 p-3 rounded-lg flex items-center gap-3">
+              <span class="p-1 rounded bg-slate-800 text-blue-400">TIP:</span>
+              <span>Look closely at the <strong>Affected File Name</strong> and <strong>Internal Host details</strong>. These must go directly into the corresponding ticket fields.</span>
+            </div>
+          </div>
+
+          <!-- TAB CONTENT B: WIRESHARK PACKET CAPTURE -->
+          <div v-show="activeEvidenceTab === 'wireshark'" class="p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+              <div>
+                <h3 class="font-bold text-white text-base">Finance Subnet Router Packet Capture</h3>
+                <p class="text-xs text-slate-400 mt-1">Click on any packet row below to inspect deep header contents.</p>
+              </div>
+              <span class="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded border border-blue-500/20 font-bold">WIRESHARK PORTABLE</span>
+            </div>
+
+            <!-- WireShark simulated Table -->
+            <div class="border border-slate-800 rounded-lg overflow-hidden bg-[#0A0D18]">
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left mono">
+                  <thead class="bg-slate-900 text-slate-400 select-none text-[10px] uppercase border-b border-slate-800">
+                    <tr>
+                      <th class="py-2.5 px-3">No.</th>
+                      <th class="py-2.5 px-2">Time</th>
+                      <th class="py-2.5 px-3">Source IP</th>
+                      <th class="py-2.5 px-3">Destination IP</th>
+                      <th class="py-2.5 px-2">Proto</th>
+                      <th class="py-2.5 px-2">Len</th>
+                      <th class="py-2.5 px-3">Info</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-900">
+                    <tr v-for="pkt in packets" :key="pkt.no" 
+                      @click="selectPacket(pkt)"
+                      :class="[
+                        selectedPacket && selectedPacket.no === pkt.no ? 'bg-blue-600/20 text-white' : 'hover:bg-slate-800/50 cursor-pointer',
+                        pkt.highlight ? 'bg-red-950/20 text-red-200' : 'text-slate-300'
+                      ]">
+                      <td class="py-2 px-3 font-semibold text-slate-500">{{ pkt.no }}</td>
+                      <td class="py-2 px-2">{{ pkt.time }}</td>
+                      <td class="py-2 px-3" :class="{'text-cyan-400': pkt.src === '192.168.10.45'}">{{ pkt.src }}</td>
+                      <td class="py-2 px-3" :class="{'text-yellow-400': pkt.dst === '203.0.113.88'}">{{ pkt.dst }}</td>
+                      <td class="py-2 px-2">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold"
+                          :class="{
+                            'bg-blue-500/10 text-blue-400 border border-blue-500/20': pkt.proto === 'TCP',
+                            'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20': pkt.proto === 'HTTP'
+                          }">{{ pkt.proto }}</span>
+                      </td>
+                      <td class="py-2 px-2">{{ pkt.len }}</td>
+                      <td class="py-2 px-3 truncate max-w-[200px]">{{ pkt.info }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Interactive Packet Inspector (Wireshark details pane style) -->
+              <div class="bg-[#090C15] border-t border-slate-800 p-4">
+                <div v-if="selectedPacket" class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Selected Packet #{{ selectedPacket.no }} Detail View:</div>
+                    <button @click="selectedPacket = null" class="text-slate-500 hover:text-white text-xs">Clear View</button>
+                  </div>
+                  <div class="bg-slate-950/80 p-3 rounded border border-cyber-border text-xs space-y-1 text-slate-300">
+                    <div><span class="text-slate-500 font-semibold">[Frame Info]:</span> Arrival Time: 08:34:{{ selectedPacket.no === 142 || selectedPacket.no === 143 || selectedPacket.no === 144 ? '13' : selectedPacket.no === 145 ? '14' : '15' }} AM, Interface: eth0</div>
+                    <div><span class="text-slate-500 font-semibold">[IP Header]:</span> Protocol: {{ selectedPacket.proto }}, Source Address: {{ selectedPacket.src }} &rarr; Destination: {{ selectedPacket.dst }}</div>
+                    <div><span class="text-slate-500 font-semibold">[Layer 4 Info]:</span> Source Port: {{ selectedPacket.srcPort }} | Destination Port: <span class="text-yellow-400 font-semibold">{{ selectedPacket.dstPort }}</span></div>
+                    <div v-if="selectedPacket.payload" class="mt-2 pt-2 border-t border-slate-900">
+                      <span class="text-emerald-400 font-semibold">[Layer 7 Data - {{ selectedPacket.proto }} Payload]:</span>
+                      <pre class="bg-black/60 p-2 rounded mt-1 overflow-x-auto text-[10px] text-emerald-300 border border-emerald-950/50">{{ selectedPacket.payload }}</pre>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-center py-4 text-slate-500 text-xs italic">
+                  Select any network packet row from the capture grid to inspect payload, port, and IP headers.
+                </div>
+              </div>
+            </div>
+
+            <!-- Learning Note -->
+            <div class="bg-blue-950/10 border border-blue-500/20 p-3 rounded-lg text-xs">
+              <span class="text-blue-400 font-bold">Educational Tip:</span>
+              Notice the 3-Way Handshake (SYN &rarr; SYN-ACK &rarr; ACK) establishing a connection on port <strong class="text-yellow-300">80 (HTTP)</strong> before the client issues a HTTP <strong class="text-emerald-300">GET /payload/update.exe</strong> request to download the secondary malicious package.
+            </div>
+          </div>
+
+          <!-- TAB CONTENT C: VULNERABILITY INTELLIGENCE -->
+          <div v-show="activeEvidenceTab === 'cve'" class="p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+              <h3 class="font-bold text-white text-base">National Vulnerability Database Threat Intelligence</h3>
+              <span class="bg-amber-500/10 text-amber-400 text-xs px-2 py-0.5 rounded border border-amber-500/20 font-bold">CVE MATCH</span>
+            </div>
+
+            <div class="bg-[#0D1525] rounded-xl p-5 border border-cyber-border space-y-4 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <span class="text-lg font-bold text-amber-400 tracking-wider font-mono">CVE-2022-30190</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-400">Severity Metric CVSS v3:</span>
+                  <span class="bg-red-500 text-black font-extrabold text-xs px-2.5 py-0.5 rounded">7.8 HIGH</span>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="text-slate-300 font-bold text-xs uppercase tracking-wider mb-1">Vulnerability Identifier:</h4>
+                <p class="text-white font-medium text-base">Microsoft Support Diagnostic Tool (MSDT) Remote Code Execution</p>
+              </div>
+
+              <div>
+                <h4 class="text-slate-400 font-bold text-xs uppercase tracking-wider mb-1">Technical Description:</h4>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  A remote code execution vulnerability exists when MSDT is called using the URL protocol from a calling host application such as Microsoft Word. An attacker who successfully exploits this vulnerability can run arbitrary shell instructions with the high privileges of the local host system.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-800 text-xs">
+                <div>
+                  <span class="text-slate-400 font-semibold block">Exploitable Vector:</span>
+                  <span class="text-amber-300">Office Document Macros & MSDT Protocol Link</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 font-semibold block">Available Remediation Patch:</span>
+                  <span class="text-emerald-400">Yes (Hotfix KB5014699)</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-xs text-slate-400 bg-slate-900 p-3 rounded-lg flex items-center gap-3">
+              <span class="p-1 rounded bg-slate-800 text-amber-400">TIP:</span>
+              <span>Keep this tab open to write down the precise <strong>CVE ID</strong> and its corresponding <strong>Severity Score</strong> into the ticket form.</span>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT SIDE: INTERACTIVE ANALYST WORKSHEET FORM & DRAFT (5 Columns) -->
+      <section class="lg:col-span-5 space-y-6">
+
+        <!-- INCIDENT RESPONSE TICKET CARD -->
+        <div class="bg-cyber-card border border-cyber-border rounded-xl shadow-2xl relative overflow-hidden print-card">
+          <!-- Cyber bar -->
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyber-primary via-blue-500 to-cyber-primary"></div>
+          
+          <div class="p-5 border-b border-cyber-border bg-[#0E1524] flex items-center justify-between no-print">
+            <div class="flex items-center space-x-2">
+              <span class="h-2 w-2 rounded-full bg-cyber-primary"></span>
+              <h2 class="font-extrabold text-sm uppercase tracking-wider text-white">Incident Response Ticket Form</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">INC-2024-001</span>
+          </div>
+
+          <div class="p-5 space-y-5">
+            <!-- Basic Analyst Metadata -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Student Name</label>
+                <input type="text" v-model="analystName" placeholder="Enter your name" class="w-full bg-[#0A0E18] text-xs text-slate-100 rounded-lg p-2.5 border border-cyber-border focus:border-cyber-primary outline-none transition">
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Email Address</label>
+                <input type="email" v-model="studentEmail" placeholder="Enter your email" class="w-full bg-[#0A0E18] text-xs text-slate-100 rounded-lg p-2.5 border border-cyber-border focus:border-cyber-primary outline-none transition">
+              </div>
+              <div>
+                <label class="block text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Date of Report</label>
+                <input type="date" v-model="reportDate" class="w-full bg-[#0A0E18] text-xs text-slate-100 rounded-lg p-2.5 border border-cyber-border focus:border-cyber-primary outline-none transition">
+              </div>
+            </div>
+            <!-- Missing Student Info Warning -->
+            <div v-if="score === 100 && (!analystName.trim() || !studentEmail.trim())" class="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg text-[11px] text-amber-400 no-print">
+              Please enter your <strong>Student Name</strong> and <strong>Email Address</strong> above to escalate the incident and claim your certificate.
+            </div>
+
+            <hr class="border-cyber-border no-print">
+
+            <!-- SECTION 1: AFFECTED SYSTEM DETAILS -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold uppercase text-cyber-primary tracking-wider flex items-center gap-1.5">
+                  <span class="text-[10px] bg-cyber-primary/10 text-cyber-primary px-1.5 py-0.5 rounded">1</span>
+                  Affected System Details
+                </h3>
+                <span class="text-xs text-slate-500 italic no-print" v-if="hintsEnabled">Clue: Check Evidence A</span>
+              </div>
+              
+              <div class="space-y-3">
+                <!-- Hostname -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Hostname</label>
+                    <span v-if="ticketValidation.hostname" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <div class="relative">
+                    <input type="text" v-model="ticket.hostname" placeholder="e.g. FIN-PC-XX" 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('hostname')">
+                    <button v-if="hintsEnabled" @click="activeEvidenceTab = 'av'" class="absolute right-2.5 top-2.5 text-amber-500 hover:text-amber-400" title="Check Antivirus Tab">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Internal IP Address -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Internal IP Address</label>
+                    <span v-if="ticketValidation.internalIP" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <div class="relative">
+                    <input type="text" v-model="ticket.internalIP" placeholder="e.g. 192.168.x.x" 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('internalIP')">
+                    <button v-if="hintsEnabled" @click="activeEvidenceTab = 'av'" class="absolute right-2.5 top-2.5 text-amber-500 hover:text-amber-400" title="Check Antivirus Tab">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Department -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Department</label>
+                    <span v-if="ticketValidation.department" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <div class="relative">
+                    <input type="text" v-model="ticket.department" placeholder="e.g. Accounting, Finance..." 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('department')">
+                    <button v-if="hintsEnabled" @click="activeEvidenceTab = 'av'" class="absolute right-2.5 top-2.5 text-amber-500 hover:text-amber-400" title="Check Scenario Briefing">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 2: THREAT INTELLIGENCE (IOCs) -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold uppercase text-cyber-accent tracking-wider flex items-center gap-1.5">
+                  <span class="text-[10px] bg-cyber-accent/10 text-cyber-accent px-1.5 py-0.5 rounded">2</span>
+                  Threat Intelligence (IoCs)
+                </h3>
+                <span class="text-xs text-slate-500 italic no-print" v-if="hintsEnabled">Clue: Look at Evidence A & B</span>
+              </div>
+
+              <div class="space-y-3">
+                <!-- Malware/Threat Name -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Malware/Threat Name</label>
+                    <span v-if="ticketValidation.threatName" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <input type="text" v-model="ticket.threatName" placeholder="e.g. Exploit:Win32..." 
+                    class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                    :class="getInputClass('threatName')">
+                </div>
+
+                <!-- Malicious File Name -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Malicious Initial File Name</label>
+                    <span v-if="ticketValidation.fileName" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <input type="text" v-model="ticket.fileName" placeholder="Name of attachment document" 
+                    class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                    :class="getInputClass('fileName')">
+                </div>
+
+                <!-- Attacker/External IP Address -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Attacker/External IP Address</label>
+                    <span v-if="ticketValidation.externalIP" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <div class="relative">
+                    <input type="text" v-model="ticket.externalIP" placeholder="e.g. 203.0.xxx.xx" 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('externalIP')">
+                    <button v-if="hintsEnabled" @click="activeEvidenceTab = 'wireshark'" class="absolute right-2.5 top-2.5 text-amber-500 hover:text-amber-400" title="Check Wireshark Packet Capture">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Port & Protocol Used by Attacker -->
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <div class="flex justify-between items-center mb-1">
+                      <label class="text-[11px] font-semibold text-slate-300">Attacker Port</label>
+                      <span v-if="ticketValidation.attackerPort" class="text-[10px] text-emerald-400 font-bold">&#10004; OK</span>
+                    </div>
+                    <input type="text" v-model="ticket.attackerPort" placeholder="e.g. 80" 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('attackerPort')">
+                  </div>
+                  <div>
+                    <div class="flex justify-between items-center mb-1">
+                      <label class="text-[11px] font-semibold text-slate-300">Protocol</label>
+                      <span v-if="ticketValidation.attackerProtocol" class="text-[10px] text-emerald-400 font-bold">&#10004; OK</span>
+                    </div>
+                    <select v-model="ticket.attackerProtocol" 
+                      class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                      :class="getInputClass('attackerProtocol')">
+                      <option value="">Select protocol</option>
+                      <option value="TCP">TCP</option>
+                      <option value="UDP">UDP</option>
+                      <option value="ICMP">ICMP</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Malicious Secondary File Downloaded via Network -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Secondary Payload File Downloaded</label>
+                    <span v-if="ticketValidation.secondaryFile" class="text-[10px] text-emerald-400 font-bold">&#10004; Correct</span>
+                  </div>
+                  <input type="text" v-model="ticket.secondaryFile" placeholder="e.g. update.exe" 
+                    class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                    :class="getInputClass('secondaryFile')">
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 3: VULNERABILITY DETAILS -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold uppercase text-cyber-warn tracking-wider flex items-center gap-1.5">
+                  <span class="text-[10px] bg-cyber-warn/10 text-cyber-warn px-1.5 py-0.5 rounded">3</span>
+                  Vulnerability Details
+                </h3>
+                <span class="text-xs text-slate-500 italic no-print" v-if="hintsEnabled">Clue: Check Threat Intel Tab</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <!-- CVE ID Exploited -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">CVE ID Exploited</label>
+                    <span v-if="ticketValidation.cveId" class="text-[10px] text-emerald-400 font-bold">&#10004; OK</span>
+                  </div>
+                  <input type="text" v-model="ticket.cveId" placeholder="CVE-2022-xxxxx" 
+                    class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                    :class="getInputClass('cveId')">
+                </div>
+
+                <!-- Severity Score -->
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-semibold text-slate-300">Severity Metric</label>
+                    <span v-if="ticketValidation.severity" class="text-[10px] text-emerald-400 font-bold">&#10004; OK</span>
+                  </div>
+                  <select v-model="ticket.severity" 
+                    class="w-full bg-[#070A12] text-xs rounded-lg p-2.5 border outline-none transition"
+                    :class="getInputClass('severity')">
+                    <option value="">Select severity</option>
+                    <option value="Low">Low</option>
+                    <option value="Med">Medium (Med)</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 4: INCIDENT SUMMARY -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-bold uppercase text-slate-300 tracking-wider flex items-center gap-1.5">
+                  <span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">4</span>
+                  Incident Summary
+                </h3>
+                <span class="text-xs text-slate-500 italic no-print">Freeform Synthesis</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mb-2">Write 2-3 sentences explaining exactly what happened using evidence, logs, and vulnerability info.</p>
+              
+              <textarea v-model="ticket.summary" rows="3" placeholder="Provide a detailed incident summary. Include how the compromise started, the network communication behavior, and the vulnerability name/ID used." 
+                class="w-full bg-[#070A12] text-xs rounded-lg p-3 border border-cyber-border focus:border-cyber-primary outline-none text-slate-200 leading-relaxed"></textarea>
+
+              <!-- Educational rubric checklist -->
+              <div class="mt-2.5 bg-slate-900/60 p-3 rounded-lg border border-slate-800/80 no-print">
+                <div class="text-[11px] font-bold text-slate-400 uppercase mb-2">Content Keyword Checklist (Auto-graders):</div>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                  <span class="flex items-center gap-1" :class="summaryChecklist.finance ? 'text-emerald-400' : 'text-slate-500'">
+                    <span class="text-xs">{{ summaryChecklist.finance ? '●' : '○' }}</span> Finance/Angela Smith
+                  </span>
+                  <span class="flex items-center gap-1" :class="summaryChecklist.invoice ? 'text-emerald-400' : 'text-slate-500'">
+                    <span class="text-xs">{{ summaryChecklist.invoice ? '●' : '○' }}</span> Invoice Document Opened
+                  </span>
+                  <span class="flex items-center gap-1" :class="summaryChecklist.cve ? 'text-emerald-400' : 'text-slate-500'">
+                    <span class="text-xs">{{ summaryChecklist.cve ? '●' : '○' }}</span> CVE-2022-30190 / Follina
+                  </span>
+                  <span class="flex items-center gap-1" :class="summaryChecklist.payload ? 'text-emerald-400' : 'text-slate-500'">
+                    <span class="text-xs">{{ summaryChecklist.payload ? '●' : '○' }}</span> update.exe Payload Download
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TIER 2 ESCALATION EMAIL DRAFT CARD -->
+        <div class="bg-cyber-card border border-cyber-border rounded-xl shadow-2xl relative overflow-hidden no-print">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-cyber-warn"></div>
+          
+          <div class="p-5 border-b border-cyber-border bg-[#0E1524] flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="h-2 w-2 rounded-full bg-cyber-warn animate-pulse"></span>
+              <h2 class="font-extrabold text-sm uppercase tracking-wider text-white">Tier 2 Escalation Email Draft</h2>
+            </div>
+            <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-bold uppercase">Ready to Send</span>
+          </div>
+
+          <div class="p-5 space-y-4 text-xs">
+            <!-- Simulated Mail Headers -->
+            <div class="space-y-2 bg-[#090D15] p-3 rounded-lg border border-cyber-border font-mono">
+              <div class="flex border-b border-slate-900 pb-2">
+                <span class="w-16 text-slate-500 font-bold">TO:</span>
+                <span class="text-blue-300 font-semibold">tier2-ir@technovasolutions.com</span>
+              </div>
+              <div class="flex border-b border-slate-900 py-2">
+                <span class="w-16 text-slate-500 font-bold">FROM:</span>
+                <span class="text-slate-300">{{ analystName || '[Your Name]' }}, Tier 1 SOC Analyst</span>
+              </div>
+              <div class="flex py-1">
+                <span class="w-16 text-slate-500 font-bold">SUBJECT:</span>
+                <span class="text-red-400 font-bold truncate">URGENT: High Severity Incident Escalation - {{ ticket.hostname || '[Insert Hostname]' }}</span>
+              </div>
+            </div>
+
+            <!-- Interactive Dynamic Preview Body (Editable Textarea) -->
+            <div class="relative">
+              <textarea v-model="customEmailBody" @input="isEmailEdited = true" rows="15" 
+                class="w-full bg-[#0A0E18] p-4 pb-12 rounded-lg border border-cyber-border text-slate-300 leading-relaxed text-xs font-mono focus:border-cyber-primary outline-none resize-y"
+                placeholder="Drafting escalation email..."></textarea>
+              <div class="absolute right-3 bottom-3 flex items-center gap-2 no-print">
+                <span v-if="isEmailEdited" class="text-[9px] text-amber-400 font-semibold uppercase bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Draft Edited</span>
+                <button v-if="isEmailEdited" @click="resetEmailTemplate" class="text-[9px] text-blue-400 hover:text-blue-300 underline font-semibold bg-slate-900/80 px-2 py-0.5 rounded border border-blue-500/20">Reset to Template</button>
+              </div>
+            </div>
+
+            <!-- Submission Status Console -->
+            <div class="flex items-center justify-between pt-2">
+              <button @click="copyEmailToClipboard" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-lg transition font-medium flex items-center gap-1.5 border border-slate-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                <span>{{ copiedText ? 'Draft Copied!' : 'Copy Email Text' }}</span>
+              </button>
+
+              <button @click="escalateIncident" :disabled="score < 100 || submitting"
+                class="px-5 py-2.5 rounded-lg transition-all duration-300 font-bold flex items-center gap-2"
+                :class="score === 100 && !submitting && analystName.trim() && studentEmail.trim() ? 'bg-cyber-primary hover:bg-emerald-600 text-black shadow-lg shadow-emerald-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'">
+                <svg v-if="submitting" class="animate-spin h-4 w-4 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <span>{{ submitting ? 'Sending Email...' : 'Send Escalation Email \u2192' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- SUCCESS MODAL & CERTIFICATE PRINT OUT -->
+    <div v-if="incidentEscalated" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 overflow-y-auto no-print">
+      <div class="bg-cyber-card border-2 border-cyber-primary rounded-2xl max-w-2xl w-full p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
+        <!-- Confetti effect or glow background -->
+        <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+        <div class="mx-auto w-16 h-16 bg-cyber-primary/10 border border-cyber-primary text-cyber-primary rounded-full flex items-center justify-center animate-bounce">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+
+        <div class="space-y-2">
+          <h2 class="text-3xl font-extrabold text-white">Incident Escalated Successfully!</h2>
+          <p class="text-sm text-emerald-400 font-bold tracking-wider uppercase">Senior Incident Response Team (Tier 2) Notified</p>
+        </div>
+
+        <!-- Simulated Response Feed -->
+        <div class="bg-slate-950 p-4 rounded-lg border border-slate-900 text-left space-y-2 font-mono text-xs">
+          <div class="text-cyber-primary">> [INFO] Received Ticket INC-2024-001 from SOC Analyst {{ analystName }}...</div>
+          <div class="text-cyber-accent">> [INFO] Dispatched Quarantine script to host FIN-PC-04 (192.168.10.45)...</div>
+          <div class="text-amber-400">> [WARN] Confirmed outbound HTTP GET requesting payload update.exe...</div>
+          <div class="text-emerald-400">> [DATABASE] {{ submissionMessage }}</div>
+          <div class="text-cyber-primary">> [STATUS] Host is now ISOLATED from the subnet network for forensics. Excellent analysis, Tier 1!</div>
+        </div>
+
+        <p class="text-sm text-slate-300">
+          Congratulations! You analyzed the security event logs perfectly, mapped them to critical indicators of compromise, identified the MSDT Follina exploit vector, and authored an actionable escalation email.
+        </p>
+
+        <!-- Achievements Grid -->
+        <div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Achievements Unlocked:</div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-2 bg-slate-900 rounded border border-cyber-border text-center">
+              <span class="text-xl">🦅</span>
+              <p class="text-[10px] font-bold text-white mt-1">Eagle Eye</p>
+              <p class="text-[8px] text-slate-400">Found all Host/IP Details</p>
+            </div>
+            <div class="p-2 bg-slate-900 rounded border border-cyber-border text-center">
+              <span class="text-xl">🕵️‍♂️</span>
+              <p class="text-[10px] font-bold text-white mt-1">Packet Sleuth</p>
+              <p class="text-[8px] text-slate-400">Identified TCP Payload</p>
+            </div>
+            <div class="p-2 bg-slate-900 rounded border border-cyber-border text-center">
+              <span class="text-xl">🛡️</span>
+              <p class="text-[10px] font-bold text-white mt-1">IR Champion</p>
+              <p class="text-[8px] text-slate-400">Perfect Escalation Draft</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-4 pt-4">
+          <button @click="incidentEscalated = false" class="text-xs text-slate-400 hover:text-white underline font-semibold">
+            Close Simulation View
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- printable / exportable Certificate View (Hidden on web, shown on Print) -->
+    <div class="hidden print:block fixed inset-0 z-50 bg-white text-black p-12 select-text">
+      <div class="border-8 border-double border-slate-800 p-8 h-full flex flex-col justify-between text-center">
+        
+        <div>
+          <h1 class="text-4xl font-extrabold uppercase tracking-widest text-slate-900 mb-2">TechNova Security Solutions</h1>
+          <p class="text-sm font-bold tracking-widest uppercase text-slate-500 mb-6">Security Operations Center (SOC) Academy</p>
+          <hr class="border-slate-800 w-1/2 mx-auto">
+        </div>
+
+        <div class="space-y-6">
+          <p class="text-xs italic tracking-wider">This official simulator award certifies that</p>
+          <h2 class="text-3xl font-extrabold underline text-slate-800">{{ analystName || 'The Security Student' }}</h2>
+          <p class="text-xs max-w-lg mx-auto leading-relaxed">
+            has successfully completed the immersive Tier 1 SOC Analyst simulation for <strong class="font-bold">Operation "Bad Invoice"</strong>. They demonstrated practical competencies in Windows Defender Endpoint Log ingestion, Wireshark Network Packet PCAP analysis, CVE-2022-30190 Vulnerability Intelligence lookup, and secure Escalation Handshake Protocols.
+          </p>
+        </div>
+
+        <div class="flex justify-between items-end border-t border-slate-300 pt-8 mt-12 text-left">
+          <div>
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Simulator Reference</div>
+            <div class="text-xs font-mono font-bold">T1-SOC-INC-2024-001</div>
+            <div class="text-[10px] text-slate-400 mt-1">Verification Date: {{ reportDate || 'July 2026' }}</div>
+          </div>
+          <div class="text-center">
+            <div class="border-b border-slate-800 w-36 mx-auto mb-1"></div>
+            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Security Director Signature</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch } = Vue;
+
+    createApp({
+      setup() {
+        // Mode Controls
+        const showInstructions = ref(true);
+        const hintsEnabled = ref(false);
+        const activeEvidenceTab = ref('av');
+        const incidentEscalated = ref(false);
+
+        // Metadata fields
+        const analystName = ref('');
+        const studentEmail = ref('');
+        const reportDate = ref(new Date().toISOString().slice(0, 10));
+        const sessionSet = ref('');
+
+        // Parse SessionSet query parameter
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          sessionSet.value = urlParams.get('SessionSet') || '';
+        } catch (e) {
+          console.error('Failed to parse URL query parameters:', e);
+        }
+
+        // Form Fields State
+        const ticket = ref({
+          hostname: '',
+          internalIP: '',
+          department: '',
+          threatName: '',
+          fileName: '',
+          externalIP: '',
+          attackerPort: '',
+          attackerProtocol: '',
+          secondaryFile: '',
+          cveId: '',
+          severity: '',
+          summary: ''
+        });
+
+        // Packets Data (Simulating Wireshark payload rows)
+        const packets = ref([
+          { no: 142, time: "08:34:13", src: "192.168.10.45", dst: "203.0.113.88", proto: "TCP", len: 66, srcPort: "49342", dstPort: "80", info: "[SYN] Seq=0 Win=64240 Len=0", payload: "TCP Handshake Step 1 (SYN Request)\nFlag: 0x002 (SYN)" },
+          { no: 143, time: "08:34:13", src: "203.0.113.88", dst: "192.168.10.45", proto: "TCP", len: 66, srcPort: "80", dstPort: "49342", info: "[SYN, ACK] Seq=0 Ack=1 Win=65535 Len=0", payload: "TCP Handshake Step 2 (SYN-ACK Response)\nFlags: 0x012 (SYN, ACK)" },
+          { no: 144, time: "08:34:13", src: "192.168.10.45", dst: "203.0.113.88", proto: "TCP", len: 54, srcPort: "49342", dstPort: "80", info: "[ACK] Seq=1 Ack=1 Win=262656 Len=0", payload: "TCP Handshake Step 3 (ACK Established Connection)\nFlag: 0x010 (ACK)" },
+          { no: 145, time: "08:34:14", src: "192.168.10.45", dst: "203.0.113.88", proto: "HTTP", len: 214, srcPort: "49342", dstPort: "80", info: "GET /payload/update.exe HTTP/1.1", payload: "GET /payload/update.exe HTTP/1.1\nHost: 203.0.113.88\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\nAccept: */*\nConnection: keep-alive" },
+          { no: 146, time: "08:34:15", src: "203.0.113.88", dst: "192.168.10.45", proto: "HTTP", len: 1043, srcPort: "80", dstPort: "49342", info: "HTTP/1.1 200 OK (application/x-msdownload)", payload: "HTTP/1.1 200 OK\nContent-Type: application/x-msdownload\nContent-Length: 98900\nConnection: close\n\n[BINARY EXEC DATA: update.exe executable headers (PE File Headers Detected)]" }
+        ]);
+
+        const selectedPacket = ref(null);
+
+        // Select packet helper
+        const selectPacket = (pkt) => {
+          selectedPacket.value = pkt;
+        };
+
+        // Strict Answers Validation
+        const ticketValidation = computed(() => {
+          const val = (input, expected) => {
+            if (!input) return false;
+            // Clean up whitespaces and lower case comparison
+            const cleanedInput = input.trim().toLowerCase();
+            if (Array.isArray(expected)) {
+              return expected.some(exp => cleanedInput === exp.toLowerCase());
+            }
+            return cleanedInput === expected.toLowerCase();
+          };
+
+          return {
+            hostname: val(ticket.value.hostname, 'FIN-PC-04'),
+            internalIP: val(ticket.value.internalIP, '192.168.10.45'),
+            department: val(ticket.value.department, 'Finance'),
+            threatName: val(ticket.value.threatName, 'Exploit:Win32/Follina.Aldha'),
+            fileName: val(ticket.value.fileName, 'Q3_Overdue_Invoice.docx'),
+            externalIP: val(ticket.value.externalIP, '203.0.113.88'),
+            attackerPort: val(ticket.value.attackerPort, '80'),
+            attackerProtocol: val(ticket.value.attackerProtocol, 'TCP'),
+            secondaryFile: val(ticket.value.secondaryFile, ['update.exe', '/payload/update.exe']),
+            cveId: val(ticket.value.cveId, 'CVE-2022-30190'),
+            severity: val(ticket.value.severity, 'High')
+          };
+        });
+
+        // Summary Content Auto-graders Checklist
+        const summaryChecklist = computed(() => {
+          const text = (ticket.value.summary || '').toLowerCase();
+          return {
+            finance: text.includes('finance') || text.includes('angela smith') || text.includes('smith'),
+            invoice: text.includes('invoice') || text.includes('docx') || text.includes('word'),
+            cve: text.includes('cve-2022-30190') || text.includes('follina') || text.includes('msdt'),
+            payload: text.includes('update.exe') || text.includes('payload') || text.includes('download')
+          };
+        });
+
+        // Calculating Score (Based on the 11 validation fields)
+        const totalAnswerFields = 11;
+        
+        const correctAnswersCount = computed(() => {
+          return Object.values(ticketValidation.value).filter(Boolean).length;
+        });
+
+        const score = computed(() => {
+          return Math.round((correctAnswersCount.value / totalAnswerFields) * 100);
+        });
+
+        // Style score dynamically
+        const scoreColor = computed(() => {
+          if (score.value === 100) return 'text-cyber-primary';
+          if (score.value >= 70) return 'text-cyber-accent';
+          if (score.value >= 40) return 'text-cyber-warn';
+          return 'text-cyber-danger';
+        });
+
+        // UI Helpers
+        const toggleHints = () => {
+          hintsEnabled.value = !hintsEnabled.value;
+        };
+
+        const getInputClass = (fieldName) => {
+          const isCorrect = ticketValidation.value[fieldName];
+          const hasValue = !!ticket.value[fieldName];
+          
+          if (isCorrect) {
+            return 'border-emerald-500/50 bg-emerald-950/10 text-emerald-300';
+          }
+          if (hasValue) {
+            return 'border-red-500/40 bg-red-950/10 text-red-300 focus:border-red-500';
+          }
+          return 'border-cyber-border focus:border-cyber-accent text-slate-200';
+        };
+
+        // Escalation Email Draft State
+        const isEmailEdited = ref(false);
+        const customEmailBody = ref('');
+
+        const defaultEmailBody = computed(() => {
+          return `Team,
+
+I am escalating an incident regarding a user in the ${ticket.value.department || '[Insert Department]'} department. At 08:34 AM, the Antivirus quarantined a file named ${ticket.value.fileName || '[Insert File Name]'}.
+
+Upon reviewing the Wireshark logs, I can confirm that the affected computer reached out to a malicious external IP address: ${ticket.value.externalIP || '[Insert External IP]'}. It appears the computer downloaded a secondary payload called ${ticket.value.secondaryFile || '[Insert Payload Name]'} over HTTP.
+
+This attack seems to be exploiting vulnerability ${ticket.value.cveId || '[Insert CVE Number]'}, which has a severity of ${ticket.value.severity || '[Insert Severity]'}.
+
+The Antivirus quarantined the initial file, but because network traffic was successful, the system may still be compromised. Requesting Tier 2 to isolate the host and begin deep forensics.
+
+Thank you,
+${analystName.value || '[Your Name]'}
+Tier 1 Security Analyst`;
+        });
+
+        // Keep customEmailBody synced with dynamic values unless edited by the student
+        watch(defaultEmailBody, (newVal) => {
+          if (!isEmailEdited.value) {
+            customEmailBody.value = newVal;
+          }
+        }, { immediate: true });
+
+        const resetEmailTemplate = () => {
+          isEmailEdited.value = false;
+          customEmailBody.value = defaultEmailBody.value;
+        };
+
+        // Copied Email Status
+        const copiedText = ref(false);
+
+        // Fallback Copy to Clipboard API for Canvas environment compatibility
+        const copyEmailToClipboard = () => {
+          const emailBody = customEmailBody.value;
+
+          // Fallback mechanism
+          const el = document.createElement('textarea');
+          el.value = emailBody;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
+
+          copiedText.value = true;
+          setTimeout(() => {
+            copiedText.value = false;
+          }, 3000);
+        };
+
+        const submitting = ref(false);
+        const submissionMessage = ref('');
+
+        // Final Escalation Event Trigger
+        const escalateIncident = async () => {
+          if (score.value !== 100 || submitting.value) return;
+
+          submitting.value = true;
+          submissionMessage.value = 'Connecting to TechNova SOC database...';
+
+          try {
+            const response = await fetch('/api/submit', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                analystName: analystName.value,
+                studentEmail: studentEmail.value,
+                sessionSet: sessionSet.value,
+                reportDate: reportDate.value,
+                score: score.value,
+                ticket: ticket.value,
+                customEmail: customEmailBody.value
+              })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+              submissionMessage.value = data.message || 'Saved successfully!';
+              incidentEscalated.value = true;
+            } else {
+              submissionMessage.value = data.message || 'Error occurred during save.';
+              incidentEscalated.value = true; // Still show success modal but display error in console
+            }
+          } catch (error) {
+            submissionMessage.value = 'Saved submission locally (Offline Fallback).';
+            incidentEscalated.value = true;
+          } finally {
+            submitting.value = false;
+          }
+        };
+
+        // Print handler
+        const triggerCertificatePrint = () => {
+          window.print();
+        };
+
+        return {
+          showInstructions,
+          hintsEnabled,
+          activeEvidenceTab,
+          incidentEscalated,
+          analystName,
+          studentEmail,
+          reportDate,
+          sessionSet,
+          ticket,
+          packets,
+          selectedPacket,
+          selectPacket,
+          ticketValidation,
+          summaryChecklist,
+          totalAnswerFields,
+          correctAnswersCount,
+          score,
+          scoreColor,
+          toggleHints,
+          getInputClass,
+          isEmailEdited,
+          customEmailBody,
+          resetEmailTemplate,
+          copyEmailToClipboard,
+          copiedText,
+          submitting,
+          submissionMessage,
+          escalateIncident,
+          triggerCertificatePrint
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
