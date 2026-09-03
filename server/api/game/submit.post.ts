@@ -53,7 +53,7 @@ export default defineEventHandler(async (event) => {
         Score: score !== undefined ? score : 100,
         Retries: retries || 1,
         Student: studentIdLink,
-        Assignment: 19
+        Assignment: 20
       }
     })
 
