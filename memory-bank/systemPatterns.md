@@ -25,6 +25,7 @@ graph TD
 
 ### 1. View Layout Components (Tailwind)
 - **Top Header Bar**: Holds general status, the live verification score (`score` / `totalAnswerFields`), and toggle buttons (Mission Guide, Hints).
+- **Mobile Navigation Tabs**: On smaller viewports, a tab row controls the visibility of the primary sections to prevent endless vertical scrolling.
 - **Scenario Card**: Establishes the narrative background of the security incident.
 - **Evidence Portal (Tabs)**:
   - *Defender Alert Log*: Shows mock Windows Defender event details.
@@ -56,6 +57,7 @@ graph TD
   - `severity` (Expected: `'High'`)
   - `summary` (Free text block analyzed by key terms)
 - `packets`: Array of 5 network packets modeling the handshake and payload download.
+- `mobileTab`: Local ref controlling the active tab strictly for responsive mobile viewing.
 
 ### 3. Business & Verification Logic
 - **`ticketValidation`**: A computed object that maps each state property to a Boolean correctness value. Checks are strictly trim-sanitized and lowercased.
@@ -63,4 +65,5 @@ graph TD
 - **`defaultEmailBody` watcher**: Automatically propagates newly generated template strings to `customEmailBody` *only* if the student has not yet edited the text manually (`!isEmailEdited`).
 - **`resetEmailTemplate()`**: Instantly reverts any custom student revisions back to the dynamic template state, clearing the `isEmailEdited` flag.
 - **`score`**: Multiplies `correctAnswersCount / totalAnswerFields` by 100 to yield a clean percentage.
+- **Responsive Visibility**: Components conditionally toggle display values using Tailwind classes bounded to the `mobileTab` ref to ensure optimal UX on small screens while maintaining full simultaneous visibility on large screens.
 - **Print Styles**: CSS `@media print` targets ensure that when `window.print()` is called, all background gradients, navigations, form elements, and sidebars are suppressed, leaving only a perfectly formatted high-contrast Certificate of Completion.

@@ -27,7 +27,7 @@ onMounted(async () => {
   }
 
   try {
-    const session: any = await $fetch('/api/auth/session')
+    const session: any = await $fetch('/api/session').catch(() => $fetch('/api/auth/session'))
     if (session?.authenticated && session?.student) {
       store.setStudent(session.student)
       return navigateTo({ path: '/game', query: route.query })

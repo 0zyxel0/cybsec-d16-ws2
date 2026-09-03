@@ -6,6 +6,7 @@ The **TechNova SOC Analyst Simulator (v2.5)** is a completed and fully functiona
 
 ## What Works
 
+- [x] **Responsive UI / Mobile UX Optimization**: Added a mobile-only tabbed navigation bar. Small screens now dynamically hide/show large components (Briefing, Evidence, Ticket, Escalation) into four separate tabs, entirely eliminating extreme vertical scrolling. Desktop/Large screens retain their simultaneous dual-column dashboard.
 - [x] **Dev Mode Test Submit Trigger (`env=dev`)**: When `?env=dev` is present in the URL, renders a `Test Submit` button in the top bar and escalation panel. Automatically populates all answers with a perfect 100% score and opens a persistent `DevTestModal` with a live "Submit Scores" workflow and success confirmation.
 - [x] **Scenario Panel**: Renders active incident background, including witness statements and timestamp logs.
 - [x] **Evidence Portal (Tabs)**:

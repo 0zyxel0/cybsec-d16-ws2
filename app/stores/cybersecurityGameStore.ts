@@ -233,6 +233,9 @@ Tier 1 Security Analyst`
         if (!this.sessionSet && studentData.classroom && studentData.classroom.length > 0) {
           this.sessionSet = studentData.classroom[0]
         }
+      } else {
+        this.analystName = ''
+        this.studentEmail = ''
       }
     },
 
@@ -244,7 +247,7 @@ Tier 1 Security Analyst`
 
     async fetchSession() {
       try {
-        const response: any = await $fetch('/api/auth/session')
+        const response: any = await $fetch('/api/session').catch(() => $fetch('/api/auth/session'))
         if (response?.authenticated && response?.student) {
           this.setStudent(response.student)
           this.sessionChecked = true
@@ -264,13 +267,14 @@ Tier 1 Security Analyst`
 
     async logout() {
       try {
-        await $fetch('/api/auth/logout', { method: 'POST' })
+        await $fetch('/api/logout', { method: 'POST' }).catch(() => $fetch('/api/auth/logout', { method: 'POST' }))
       } catch (error) {
         console.error('Logout error:', error)
       } finally {
         this.setStudent(null)
         this.isAuthenticated = false
-        navigateTo('/login')
+        this.sessionChecked = true
+        await navigateTo('/login')
       }
     },
 
