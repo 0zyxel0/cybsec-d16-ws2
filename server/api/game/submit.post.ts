@@ -27,13 +27,6 @@ export default defineEventHandler(async (event) => {
 
   const nocodbApiToken = process.env.NOCODB_API_TOKEN || process.env.NOCODB_TOKEN
   let nocodbBaseUrl = process.env.NOCODB_BASE_URL
-  if (!nocodbBaseUrl && process.env.NOCODB_API_URL) {
-    try {
-      nocodbBaseUrl = new URL(process.env.NOCODB_API_URL).origin
-    } catch {
-      nocodbBaseUrl = ''
-    }
-  }
 
   if (!nocodbBaseUrl || !nocodbApiToken) {
     console.warn('NocoDB API credentials are not set. Mocking successful score submission.')
