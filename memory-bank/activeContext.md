@@ -1,18 +1,15 @@
 # Active Context - TechNova SOC Analyst Simulator
 
 ## Current Status
-We have reviewed the core application structure in `index.html`. It contains a single-page interactive application using Vue 3 and Tailwind CSS.
-We are now initializing the Memory Bank to document the system patterns, technology stack, project goals, and future directions.
+The Nuxt 3 fullstack cybersecurity training application is active with authentication, database synchronization with NocoDB, and session management.
 
 ## Recent Changes
-- Initialized `memory-bank/projectbrief.md` defining project goals and scope.
-- Initialized `memory-bank/productContext.md` detailing the classroom simulator UX and core training outcomes.
+- Implemented Dev Mode Test Submit feature triggered when URL query parameter `env=dev` is present (`?env=dev`).
+- Added "Test Submit" action buttons in `HeaderBar.vue` and `EscalationEmailCard.vue` that auto-complete all ticket IoCs and the synthesis memo with a perfect 100% score (`fillPerfectScore()`).
+- Added a persistent `DevTestModal.vue` where developers can click "Submit Scores" to trigger the live score submission workflow with loading spinners and post-submission success feedback identical to standard submissions.
+- Implemented and verified the Agent Login Page (`app/pages/login.vue`) requiring authentication via email and password with error handling, loading states, password visibility toggle, and auto-redirect for existing sessions.
+- Updated `HeaderBar.vue` to display authenticated student information (Student ID / Student Number and Email) in the top bar when the user has logged in.
 
 ## Next Steps
-- Complete the initialization of the Memory Bank files (`systemPatterns.md`, `techContext.md`, and `progress.md`).
-- Ensure all files are thoroughly mapped to the current implementation state.
+- Continue verifying and testing simulator functionality across modules.
 
-## Core Decisions & Considerations
-- **Architecture**: Single HTML page (`index.html`) using CDN-loaded libraries for lightweight execution and no-build deployment.
-- **Answer Validation Strategy**: Handled entirely on the client-side within Vue `computed` property (`ticketValidation`), checking input fields against expected answers using strict case-insensitive trimming.
-- **Print Optimization**: A custom certificate uses Tailwind's `@media print` utilities to hide interactive elements and render a clean award printable document.

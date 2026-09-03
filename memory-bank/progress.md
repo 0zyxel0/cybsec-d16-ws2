@@ -6,7 +6,7 @@ The **TechNova SOC Analyst Simulator (v2.5)** is a completed and fully functiona
 
 ## What Works
 
-- [x] **Top Header & Control Bar**: Features a real-time progress/score tracker displaying correct answers and completion percentage. Holds dynamic toggles for the Mission Guide and Hints.
+- [x] **Dev Mode Test Submit Trigger (`env=dev`)**: When `?env=dev` is present in the URL, renders a `Test Submit` button in the top bar and escalation panel. Automatically populates all answers with a perfect 100% score and opens a persistent `DevTestModal` with a live "Submit Scores" workflow and success confirmation.
 - [x] **Scenario Panel**: Renders active incident background, including witness statements and timestamp logs.
 - [x] **Evidence Portal (Tabs)**:
   - *Evidence A (Defender Log)*: High-fidelity mock Windows Defender alert.

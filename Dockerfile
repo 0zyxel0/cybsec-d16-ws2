@@ -1,24 +1,36 @@
-# Use lightweight Node.js Alpine base image
-FROM node:18-alpine
+# Use node 22 as base image
+FROM node:22-alpine as build
 
-# Create app directory
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-# Copy package.json
-COPY package.json ./
+# Copy package files
+COPY package*.json ./
 
-# Install production dependencies
-RUN npm install --omit=dev
+# Install dependencies
+RUN npm install
 
-# Copy application source code
-COPY index.html ./
-COPY server.js ./
+# Copy source code
+COPY . .
 
-# Expose server port (default 3000)
+# Build the application
+RUN npm run build
+
+# Production image
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copy the built application from the build stage
+COPY --from=build /app/.output /app/.output
+
+# Expose port
 EXPOSE 3000
 
-# Set Node.js production environment
+# Set environment variables
+ENV HOST=0.0.0.0
+ENV PORT=3000
 ENV NODE_ENV=production
 
-# Command to run the application
-CMD [ "npm", "start" ]
+# Start the application
+CMD ["node", ".output/server/index.mjs"]
